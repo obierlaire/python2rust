@@ -1,0 +1,42 @@
+{
+  "ignorable_differences": [
+    "Choice of equivalent libraries/crates",
+    "Internal implementation details",
+    "Memory management approaches",
+    "Framework choices",
+    "Logging implementations",
+    "Error handling strategies",
+    "Coloring implementations",
+    "Color schemes and color mapping approach",
+    "Ploting and drawing approach",
+    "Server configuration details"
+  ],
+  "critical_differences": {
+    "core": [
+      "Algorithm correctness",
+      "Computation results",
+      "State management"
+    ],
+    "routing": {
+      "paths": "Must use exact same URL paths",
+      "methods": "Must handle same HTTP methods",
+      "responses": "Must return same content types"
+    },
+    "image": {
+      "dimensions": "Must match Python's resolution",
+      "format": "Must generate valid image files",
+      "encoding": "Must properly encode image data",
+      "verification": "Must pass image verification checks"
+    },
+    "template": {
+      "structure": "Must match Python's HTML template exactly"
+    },
+    "data": {
+      "centerpoints": "Must match Python's list of centerpoints"
+    },
+    "build": {
+      "compilation": "Must compile without errors",
+      "clippy": "Must pass Clippy checks"
+    }
+  }
+}

@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "python2rust"
+version = "0.1.0"
+description = "A tool to migrate Python code to Rust using multiple LLMs"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [
+    { include = "python2rust", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.31.0"
+pillow = "^10.0.0"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.1.0"
+aiohttp = "^3.9.0"
+anthropic = "^0.37.1"
+langchain = "^0.3.5"
+langchain-anthropic = "^0.2.3"
+langchain-huggingface = "^0.1.1"
+psutil = "^6.1.0"
+
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+black = "^24.1.0"
+ruff = "^0.1.0"
+mypy = "^1.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+select = ["E", "F", "I"]
+line-length = 100
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+ignore_missing_imports = true

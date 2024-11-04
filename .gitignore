@@ -1,0 +1,96 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.pytest_cache/
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+.python-version
+pyvenv.cfg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Generated files & logs
+/generated/
+/logs/
+*.log
+/debug/
+/dist/
+/output/
+
+# API tokens and secrets
+.claude_token
+.hf_token
+*.pem
+*.key
+.env*
+!.env.example
+
+# Project specific backup files
+*.bak
+*.backup
+*.old
+*.tmp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Local development configuration
+.python-version
+poetry.lock
+# Uncomment if you don't want to version control these
+# pyproject.toml
+# migration_specs.json
+# ~/.config/python2rust/
+
+# Rust (in case Rust files are generated in the project directory)
+/target/
+**/*.rs.bk
+Cargo.lock
+debug/
