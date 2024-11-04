@@ -55,12 +55,6 @@ class AnalysisChain:
             return {"analysis": analysis}
             
         except Exception as e:
-            logger.error(f"Analysis failed: {e}")
-            logger.exception(e)
+            logger.exception(f"Analysis failed: {e}")
             return {"error": str(e)}
             raise
-
-    def _log_analysis_insights(self, analysis: Dict[str, Any]) -> None:
-        """Log key insights from the analysis."""
-        # Helper method for structured logging of analysis results
-        pass  # We can implement this if we want more detailed logging

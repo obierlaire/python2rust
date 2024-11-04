@@ -121,6 +121,5 @@ class VerificationChain:
             return filtered_result
             
         except Exception as e:
-            logger.error(f"Verification failed: {e}")
-            logger.exception(e)
+            logger.exception(f"Verification failed: {e}")
             raise

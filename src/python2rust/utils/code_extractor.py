@@ -37,6 +37,5 @@ class CodeExtractor:
             return rust_code, toml_content
             
         except Exception as e:
-            logger.error(f"Failed to extract code blocks: {e}")
-            logger.exception(e)
+            logger.exception(f"Failed to extract code blocks: {e}")
             raise ValueError(f"Code extraction failed: {str(e)}")

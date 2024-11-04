@@ -1,6 +1,6 @@
 # workflows/build_workflow.py
 from langchain.schema.runnable import RunnableSequence
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from ..utils.logging import setup_logger
 from ..builders import RustBuilder

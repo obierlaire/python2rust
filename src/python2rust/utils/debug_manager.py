@@ -26,9 +26,9 @@ class DebugManager:
     def _get_next_attempt_number(self) -> int:
         """Get the next attempt number based on existing directories."""
         existing = [
-            int(p.name.split("_")[1])
+            int(p.name[8:])  # "attempt_" is always 8 chars
             for p in self.settings.debug_dir.glob("attempt_*")
-            if p.is_dir() and p.name.startswith("attempt_")
+            if p.is_dir()
         ]
         return max(existing, default=-1) + 1
 

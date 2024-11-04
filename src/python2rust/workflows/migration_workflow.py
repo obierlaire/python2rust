@@ -1,7 +1,6 @@
 from langchain.schema.runnable import RunnableSequence
 from typing import Dict, Any
 from ..utils.logging import setup_logger
-from ..config.settings import Settings
 
 logger = setup_logger()
 
