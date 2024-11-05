@@ -1,15 +1,21 @@
 # initializers/chain_initializer.py
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from langchain_core.language_models import BaseLanguageModel
 from ..config.settings import Settings, LLMChoice
 from ..chains import AnalysisChain, GenerationChain, VerificationChain, FixChain
 from ..utils.logging import setup_logger
+from langchain.callbacks.base import BaseCallbackHandler
 
 logger = setup_logger()
 
 class ChainInitializer:
-    def __init__(self, settings: Settings):
+    def __init__(
+        self, 
+        settings: Settings,
+        callbacks: Optional[List[BaseCallbackHandler]] = None
+    ):
         self.settings = settings
+        self.callbacks = callbacks or [] 
 
     def initialize(
         self,
@@ -31,7 +37,8 @@ class ChainInitializer:
     ) -> AnalysisChain:
         """Initialize analysis chain."""
         return AnalysisChain(
-            llm=llms[self.settings.llm_steps.analysis]
+            llm=llms[self.settings.llm_steps.analysis],
+            callbacks=self.callbacks
         )
 
     def _initialize_generation_chain(
@@ -40,7 +47,8 @@ class ChainInitializer:
     ) -> GenerationChain:
         """Initialize generation chain."""
         return GenerationChain(
-            llm=llms[self.settings.llm_steps.generation]
+            llm=llms[self.settings.llm_steps.generation],
+            callbacks=self.callbacks
         )
 
     def _initialize_verification_chain(
@@ -50,7 +58,8 @@ class ChainInitializer:
         """Initialize verification chain."""
         return VerificationChain(
             llm=llms[self.settings.llm_steps.verification],
-            specs_file=self.settings.specs_file
+            specs_file=self.settings.specs_file,
+            callbacks=self.callbacks
         )
 
     def _initialize_fix_chain(
@@ -60,5 +69,6 @@ class ChainInitializer:
         """Initialize fix chain."""
         return FixChain(
             llm=llms[self.settings.llm_steps.fixes],
-            specs_file=self.settings.specs_file  # Add specs_file parameter
+            specs_file=self.settings.specs_file,
+            callbacks=self.callbacks
         )

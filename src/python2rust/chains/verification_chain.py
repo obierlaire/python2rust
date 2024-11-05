@@ -1,21 +1,25 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 from langchain_core.language_models import BaseLanguageModel
 from langchain.chains import LLMChain
 from ..prompts.verification_prompts import VERIFICATION_PROMPT
 from ..utils.logging import setup_logger
 import json
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 logger = setup_logger()
 
 class VerificationChain:
     """Chain for verifying Rust implementation against Python original."""
     
-    def __init__(self, llm: BaseLanguageModel, specs_file: Path):
+    def __init__(self, llm: BaseLanguageModel, specs_file: Path, callbacks: Optional[List[BaseCallbackHandler]] = None):
         self.chain = LLMChain(
             llm=llm,
             prompt=VERIFICATION_PROMPT,
-            output_key="verification"
+            output_key="verification",
+            callbacks=callbacks,
+            verbose=True 
         )
         self.specs_file = specs_file
         self.migration_specs = self._load_migration_specs()
@@ -86,7 +90,7 @@ class VerificationChain:
                 "rust_code": rust_code,
                 "analysis": analysis,
                 "migration_specs": self.migration_specs
-            })
+            }, include_run_info=True)
             
             verification_result = result["verification"]
             logger.info("Verification result: %s", verification_result)

@@ -1,8 +1,10 @@
 # chains/fix_chain.py
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from langchain_core.language_models import BaseLanguageModel
 from langchain.chains import LLMChain
 from pathlib import Path
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 from ..prompts.fix_prompts import FIX_PROMPT, SYSTEM_MESSAGE
 from ..utils.logging import setup_logger
@@ -15,7 +17,7 @@ logger = setup_logger()
 class FixChain:
     """Chain for fixing Rust implementation based on verification results."""
     
-    def __init__(self, llm: BaseLanguageModel, specs_file: Path):
+    def __init__(self, llm: BaseLanguageModel, specs_file: Path, callbacks: Optional[List[BaseCallbackHandler]] = None):
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", SYSTEM_MESSAGE),
             ("human", FIX_PROMPT.template)
@@ -24,7 +26,9 @@ class FixChain:
         self.chain = LLMChain(
             llm=llm,
             prompt=chat_prompt,
-            output_key="fixed_code"
+            output_key="fixed_code",
+            callbacks=callbacks,
+            verbose=True 
         )
         self.code_extractor = CodeExtractor()
         self.specs_file = specs_file
@@ -99,8 +103,8 @@ class FixChain:
                 "toml_content": toml_content,
                 "verification_result": verification_result,
                 "analysis": analysis,
-                "migration_specs": self.migration_specs
-            })
+                "migration_specs": self.migration_specs,
+            }, include_run_info=True)
             
             result = response["fixed_code"]
             fixed_rust, fixed_toml = self.code_extractor.extract_code_blocks(result)

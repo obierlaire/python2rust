@@ -1,0 +1,16 @@
+{
+    "countries": [
+      {
+        "country": "world",
+        "gco2_per_kwh": 442
+      },
+      {
+        "country": "france",
+        "gco2_per_kwh": 51.1
+      },
+      {
+        "country": "usa",
+        "gco2_per_kwh": 379
+      }
+    ]
+  }

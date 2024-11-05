@@ -7,6 +7,9 @@ from ..workflows import MigrationWorkflow, BuildWorkflow, TestWorkflow
 from ..config.settings import Settings
 from ..utils.logging import setup_logger
 from langchain.schema.runnable import RunnableSequence
+from ..utils.debug_manager import DebugManager
+from ..utils.trackers import create_tracker
+from langchain_anthropic import ChatAnthropic 
 import json
 
 from ..builders.rust_builder import RustBuilder
@@ -26,17 +29,27 @@ class MigrationAgent:
         output_dir: Optional[Path] = None,
         settings: Optional[Settings] = None
     ):
+
         # Initialize settings and state
         self.settings = settings or Settings()
         if output_dir:
             self.settings.output_dir = output_dir
         self.state = MigrationState()
-        
-        # Initialize components
+
+
+        # Initialize components with callbacks
         llm_initializer = LLMInitializer(self.settings)
-        chain_initializer = ChainInitializer(self.settings)
+        chain_initializer = ChainInitializer(
+            settings=self.settings,
+            callbacks=create_tracker(debug_dir=self.settings.debug_dir)
+        )
         
-        self.llms = llm_initializer.initialize(claude_token, hf_token)
+        # Initialize LLMs and chains
+        self.llms = llm_initializer.initialize(
+            claude_token=claude_token,
+            hf_token=hf_token,
+            callbacks=create_tracker(debug_dir=self.settings.debug_dir)
+        )
         self.chains = chain_initializer.initialize(self.llms)
         
         # Initialize builders
@@ -68,10 +81,11 @@ class MigrationAgent:
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        pass
-    
+        return
+
     async def migrate(self, python_code: str) -> Tuple[bool, Optional[str], Optional[str]]:
         try:
+
             initial_context = {
                 "python_code": python_code,
                 "output_dir": self.settings.output_dir

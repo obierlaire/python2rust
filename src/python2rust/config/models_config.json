@@ -1,0 +1,18 @@
+{
+    "models": [
+      {
+        "model": "claude-3-sonnet",
+        "hosting": "anthropic",
+        "country": "world",
+        "energy_kwh": 1.13,
+        "token_base": 5000
+      },
+      {
+        "model": "claude-3-opus",
+        "hosting": "anthropic",
+        "country": "world",
+        "energy_kwh": 1.45,
+        "token_base": 5000
+      }
+    ]
+  }

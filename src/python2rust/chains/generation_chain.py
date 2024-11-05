@@ -1,7 +1,9 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from langchain_core.language_models import BaseLanguageModel
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
+from langchain.callbacks.base import BaseCallbackHandler
+
 
 from ..prompts.generation_prompts import SYSTEM_MESSAGE, GENERATION_PROMPT
 from ..utils.logging import setup_logger
@@ -12,7 +14,7 @@ logger = setup_logger()
 class GenerationChain:
     """Chain for initial Python to Rust code conversion."""
     
-    def __init__(self, llm: BaseLanguageModel):
+    def __init__(self, llm: BaseLanguageModel, callbacks: Optional[List[BaseCallbackHandler]] = None):
          # Create chat prompt template with system and human messages
         chat_prompt = ChatPromptTemplate.from_messages([
             ("system", SYSTEM_MESSAGE),
@@ -22,7 +24,9 @@ class GenerationChain:
         self.chain = LLMChain(
             llm=llm,
             prompt=chat_prompt,
-            output_key="generated_code"
+            output_key="generated_code",
+            callbacks=callbacks,
+            verbose=True 
         )
         self.code_extractor = CodeExtractor()
     
@@ -40,7 +44,7 @@ class GenerationChain:
             response = await self.chain.ainvoke({
                 "python_code": python_code,
                 "analysis": analysis
-            })
+            }, include_run_info=True)
             result = response["generated_code"]
             logger.info("Generated initial Rust code")
 

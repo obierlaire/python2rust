@@ -23,6 +23,10 @@ def get_default_specs_path() -> Path:
     # If no file found, use package default
     return Path(__file__).parent / "default_specs.json"
 
+def get_config_path() -> Path:
+    """Get the path to the config file."""
+    return Path(__file__).parent
+
 class LLMChoice(str, Enum):
     """Available LLM choices."""
     CLAUDE = "claude"

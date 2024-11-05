@@ -1,44 +1,36 @@
 import logging
 from pathlib import Path
 from datetime import datetime
-
+# logging.py
+# logging.py
 def setup_logger(log_dir: Path = Path("logs")) -> logging.Logger:
     """Set up logging configuration."""
-    # Create logs directory
     log_dir.mkdir(parents=True, exist_ok=True)
     
-    # Create logger
     logger = logging.getLogger("python2rust")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     
-    # Prevent duplicate handlers
     if logger.handlers:
         return logger
     
-    # Create formatters
-    file_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
-    console_formatter = logging.Formatter(
-        '%(levelname)s: %(message)s'
-    )
-    
-    # File handler
+    # Debug file handler
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_handler = logging.FileHandler(
-        log_dir / f"migration_{timestamp}.log"
+    debug_handler = logging.FileHandler(
+        log_dir / f"debug_{timestamp}.log"
     )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(file_formatter)
+    debug_handler.setLevel(logging.DEBUG)
+    debug_handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    ))
     
-    # Console handler
+    # Info console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(console_formatter)
+    console_handler.setFormatter(logging.Formatter(
+        '%(levelname)s: %(message)s'
+    ))
     
-    # Add handlers
-    logger.addHandler(file_handler)
+    logger.addHandler(debug_handler)
     logger.addHandler(console_handler)
     
     return logger

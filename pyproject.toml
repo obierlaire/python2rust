@@ -20,6 +20,9 @@ langchain = "^0.3.5"
 langchain-anthropic = "^0.2.3"
 langchain-huggingface = "^0.1.1"
 psutil = "^6.1.0"
+codecarbon = "^2.7.2"
+langchain-llm = "^0.4.15"
+ecologits = "^0.5.1"
 
 
 

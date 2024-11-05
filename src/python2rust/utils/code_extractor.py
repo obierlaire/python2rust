@@ -20,7 +20,6 @@ class CodeExtractor:
             ValueError: If code blocks cannot be found
         """
         try:
-            logger.info(f"Text for code extraction: {text}")
             # Extract Rust code
             rust_match = re.search(r"```rust\n(.*?)```", text, re.DOTALL)
             if not rust_match:
