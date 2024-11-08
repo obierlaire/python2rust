@@ -3,6 +3,7 @@ from langchain.schema.runnable import RunnableSequence
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from ..utils.logging import setup_logger
+from ..utils.error_formatter import format_error_for_fix
 from ..builders import RustBuilder
 
 logger = setup_logger()
@@ -61,16 +62,26 @@ class BuildWorkflow:
             logger.info(f"Attempting build fix {attempt + 1}")
             
             try:
+                # Clean up the error message
+                clean_error = format_error_for_fix(inputs["build_error"])
+                
+                # Better error structure
+                verification_result = {
+                    "critical_differences": {
+                        "build": clean_error,  # Direct error message
+                        "error_details": {
+                            "type": "compilation",
+                            "message": clean_error,
+                            "attempt": attempt + 1,
+                            "max_attempts": self.max_fix_attempts
+                        }
+                    }
+                }
+                
                 fix_result = await self.chains["fix"].fix(
                     rust_code=current_rust_code,
                     toml_content=current_toml_content,
-                    verification_result={
-                        "critical_differences": {
-                            "build": {
-                                "compilation": inputs["build_error"]
-                            }
-                        }
-                    },
+                    verification_result=verification_result,
                     analysis=inputs.get("analysis")
                 )
                 
@@ -93,7 +104,7 @@ class BuildWorkflow:
             except Exception as e:
                 logger.error(f"Build fix attempt {attempt + 1} failed: {e}")
                 continue
-                
+                    
         return inputs
 
     async def _run_clippy(self, inputs: Dict[str, Any]) -> Dict[str, Any]:

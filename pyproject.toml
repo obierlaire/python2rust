@@ -23,6 +23,9 @@ psutil = "^6.1.0"
 codecarbon = "^2.7.2"
 langchain-llm = "^0.4.15"
 ecologits = "^0.5.1"
+tiktoken = "^0.8.0"
+pylint = "^3.3.1"
+autopep8 = "^2.3.1"
 
 
 

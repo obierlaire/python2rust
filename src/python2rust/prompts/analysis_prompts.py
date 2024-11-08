@@ -4,15 +4,15 @@ from langchain.prompts import PromptTemplate
 SYSTEM_MESSAGE = """You are an expert code analyzer specializing in Python to Rust migrations. You understand:
 - Core functionality must be preserved
 - Implementation details can differ (e.g., web frameworks, logging systems)
+- Don't generate more files than a rust file and a Cargo.toml
+- Templates, HTML, or other content must be embedded as constants
 - Rust's strengths should be leveraged where appropriate
-- Focus on what matters to end users and program output"""
+- Focus on what matters to end users and program output
+- Always return analysis in clear JSON format"""
 
 ANALYSIS_PROMPT = PromptTemplate(
     input_variables=["python_code"],
-    template="""You are an expert Python and Rust developer tasked with analyzing Python code for migration to Rust.
-First, understand what this code does and how it works. Then provide a detailed analysis focusing on critical aspects for Rust migration.
-
-Analyze this Python code:
+    template="""Analyze this Python code for migration to Rust:
 {python_code}
 
 Return ONLY a JSON object with this structure:
@@ -34,8 +34,7 @@ Return ONLY a JSON object with this structure:
     }},
     "rust_requirements": {{
         "equivalent_libraries": {{
-            "python_lib": "recommended rust crate and why",
-            "python_lib2": "recommended rust crate and why"
+            "python_lib": "recommended rust crate and why"
         }},
         "key_types": ["specific Rust types needed"],
         "performance_aspects": ["areas where Rust can improve performance"]

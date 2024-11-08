@@ -59,6 +59,7 @@ pyvenv.cfg
 # API tokens and secrets
 .claude_token
 .hf_token
+.mistral_token
 *.pem
 *.key
 .env*
