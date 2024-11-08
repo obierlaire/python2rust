@@ -13,6 +13,13 @@
         "country": "world",
         "energy_kwh": 1.45,
         "token_base": 5000
+      },
+      {
+        "model": "codellama/CodeLlama-34b-Instruct-hf",
+        "hosting": "anthropic",
+        "country": "world",
+        "energy_kwh": 0.36,
+        "token_base": 5000
       }
     ]
   }

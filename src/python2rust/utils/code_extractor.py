@@ -21,16 +21,18 @@ class CodeExtractor:
         """
         try:
             # Extract Rust code
-            rust_match = re.search(r"```rust\n(.*?)```", text, re.DOTALL)
+            rust_match = re.search(r"```rust\s+(.*?)```", text, re.DOTALL)
             if not rust_match:
                 raise ValueError("No Rust code block found in response")
             rust_code = rust_match.group(1).strip()
             
             # Extract TOML
-            toml_match = re.search(r"```toml\n(.*?)```", text, re.DOTALL)
+            toml_match = re.search(r"```toml\s+(.*?)```", text, re.DOTALL)
             if not toml_match:
-                raise ValueError("No TOML code block found in response")
-            toml_content = toml_match.group(1).strip()
+                #raise ValueError("No TOML code block found in response")
+                toml_content = None
+            else:
+                toml_content = toml_match.group(1).strip()
             
             logger.debug("Successfully extracted code blocks")
             return rust_code, toml_content

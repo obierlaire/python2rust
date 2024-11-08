@@ -45,6 +45,19 @@ Please create {claude_token_path} with your Claude API key from https://console.
         logger.info("No HuggingFace token found - will use Claude for all operations")
         tokens["hf"] = None
     
+     # Check Mistral token (optional)
+    mistral_token_path = project_root / ".mistral_token"
+    try:
+        tokens["mistral"] = mistral_token_path.read_text().strip()
+        if tokens["mistral"]:
+            logger.info("Mistral token found - Codestral available")
+        else:
+            logger.warning("Mistral token file is empty")
+            tokens["mistral"] = None
+    except FileNotFoundError:
+        logger.info("No Mistral token found - will use Claude for all operations")
+        tokens["mistral"] = None
+    
     return tokens
 
 def validate_python_file(file_path: Path) -> str:
@@ -77,30 +90,32 @@ async def migrate_code(
         # Read and validate Python code
         python_code = validate_python_file(python_file)
         
-        # Configure settings based on available tokens
-        settings = Settings(
-            output_dir=output_dir,
-            llm_steps={
-                "analysis": LLMChoice.CLAUDE,
-                "generation": LLMChoice.CODELLAMA if tokens["hf"] else LLMChoice.CLAUDE,
-                "verification": LLMChoice.CLAUDE,
-                "fixes": LLMChoice.CODELLAMA if tokens["hf"] else LLMChoice.CLAUDE
-            }
-        )
+        # Configure settings - using available models
+        if tokens["hf"]:
+            settings = Settings(
+                output_dir=output_dir,
+                llm_steps={
+                    "analysis": LLMChoice.CLAUDE,      # Good at understanding code
+                    "generation": LLMChoice.CLAUDE, # Good at code generation
+                    "verification": LLMChoice.CLAUDE,   # Good at comparison
+                    "fixes": LLMChoice.CLAUDE       # Good at code fixes
+                }
+            )
+        else:
+            # Fall back to Claude for everything if no HF token
+            settings = Settings(output_dir=output_dir)  # Uses default Claude settings
         
         # Log configuration
         logger.info("Migration configuration:")
         logger.info(f"- Input file: {python_file}")
         logger.info(f"- Output directory: {output_dir}")
-        logger.info(f"- Analysis: {settings.llm_steps.analysis}")
-        logger.info(f"- Generation: {settings.llm_steps.generation}")
-        logger.info(f"- Verification: {settings.llm_steps.verification}")
-        logger.info(f"- Fixes: {settings.llm_steps.fixes}")
+        logger.info("Models used:")
+        for task, model in settings.llm_steps.dict().items():
+            logger.info(f"  - {task}: {model}")
         
         # Initialize and run migration agent
         async with MigrationAgent(
-            claude_token=tokens["claude"],
-            hf_token=tokens["hf"],
+            tokens=tokens,
             output_dir=output_dir,
             settings=settings
         ) as agent:
@@ -108,13 +123,10 @@ async def migrate_code(
             
             if success:
                 logger.info("Migration successful!")
-                
-                # Show output locations
                 print("\nMigration successful!")
                 print(f"Generated files in: {output_dir}")
                 print(f"Debug information in: {output_dir}/debug")
                 print(f"Logs in: {Path('logs')}")
-                
                 return True
             else:
                 logger.error("Migration failed!")
