@@ -1,6 +1,9 @@
 # Python2Rust
 
+**DISCLAIMER: This tool is not intended to be used in production. This is only for demonstration purposes !**
+
 A tool for automatically migrating Python code to Rust using AI. Leverages Claude to analyze Python code and generate equivalent Rust implementations.
+
 
 ## Features
 
@@ -34,27 +37,21 @@ Basic usage:
 python -m python2rust --python-file path/to/your/file.py --output-dir generated
 ```
 
-Check the `examples/` directory for more use cases:
-- `simple_migration.py`: Basic code migration
-- `server_migration.py`: Web server migration
-- `batch_migration.py`: Multiple file migration
+or 
 
-## Development
-
-1. Set up development environment:
-```bash
-make dev
 ```
-
-2. Run tests:
-```bash
-make test
-```
-
-3. Clean generated files:
-```bash
 make clean
+make migrate
 ```
+
+The rust file is generated in `/generated/src` folder
+Logs are in `/logs` folder
+Calls to AI services, with prompts, number of tokens, carbon emissions are in `/generated/debug/`
+
+Check the `examples/` directory for more use cases:
+- `prime`: Basic python web server that calculate prime numbers and do matrix multiplication
+- `mandleweb`: Mandlebrot set generation and webserver
+
 
 ## Requirements
 
@@ -66,11 +63,3 @@ make clean
 ## License
 
 MIT License - see LICENSE file for details
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
