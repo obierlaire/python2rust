@@ -50,6 +50,7 @@ pyvenv.cfg
 
 # Generated files & logs
 /generated/
+/generated_*/
 /logs/
 *.log
 /debug/

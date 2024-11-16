@@ -8,9 +8,15 @@ from pathlib import Path
 from ..utils.logging import setup_logger
 from ..builders import ServerTester
 from ..utils.error_formatter import format_error_for_fix
+from ..utils.build_output import update_rust_files
 
 
 logger = setup_logger()
+
+
+class TestScriptError(Exception):
+    """Custom exception for test script issues."""
+    pass
 
 
 @dataclass
@@ -34,7 +40,8 @@ class TestWorkflow:
         return RunnableSequence(
             self._check_rust_installation,
             self._run_server_tests,
-            self._handle_test_results
+            self._handle_test_results,
+            # TODO update_rust_files,
         )
 
     def _extract_compiler_errors(self, error_text: str) -> List[str]:
@@ -84,6 +91,11 @@ After installation, restart your terminal and try again.
     async def _run_server_tests(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Run server tests."""
         try:
+            if not self.server_tester.test_script_path.exists():
+                error_msg = f"Test script not found: {self.server_tester.test_script_path}"
+                logger.error(error_msg)
+                raise TestScriptError(error_msg)
+
             if inputs.get("test_error"):
                 return inputs
 
@@ -121,6 +133,8 @@ After installation, restart your terminal and try again.
 
             return inputs
 
+        except TestScriptError:
+            raise
         except Exception as e:
             logger.exception(f"Server testing failed: {e}")
             inputs["test_success"] = False

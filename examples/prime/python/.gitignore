@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cython and compiled binaries
+*.c
+*.so
+$(CYTHON_SCRIPT)
+$(NUITKA_SCRIPT)
+dist/
+build/
+
+# Nuitka cache
+__nuitka_cache__/
+
+# Poetry
+*.lock
+poetry.lock
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Virtual environment
+venv/
+.env/
+
+# PyInstaller and similar
+*.spec

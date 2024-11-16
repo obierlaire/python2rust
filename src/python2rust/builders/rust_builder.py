@@ -36,7 +36,8 @@ class RustBuilder:
                 )
             except asyncio.TimeoutError as e:
                 process.kill()
-                raise TimeoutError(f"Command timed out after {self.build_timeout} seconds") from e
+                raise TimeoutError(
+                    f"Command timed out after {self.build_timeout} seconds") from e
 
             return (
                 process.returncode,

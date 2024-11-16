@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 from pathlib import Path
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 import signal
 import psutil
 import os
@@ -14,22 +14,76 @@ logger = setup_logger()
 
 
 class ServerTester:
-    """Tests the generated Rust web server functionality."""
+    """Tests the generated Rust web server functionality using external test script."""
+
+    ERROR_PATTERNS = [
+        r'(?i)error',        # Case-insensitive error
+        r'panic',            # Rust panics
+        r'thread.*panic',    # Thread panics
+        r'unwrap.*failed',   # Unwrap failures
+        r'exception',        # General exceptions
+        r'fail[a-z]*:',      # Failures (failed:, failing:, etc.)
+        r'FATAL',            # Fatal errors
+        r'ERROR:',           # Error logs
+        r'WARN:',            # Warnings (optional, but might be important)
+    ]
 
     def __init__(
         self,
         host: str = "127.0.0.1",
         port: int = 8080,
         startup_timeout: int = 60,
-        request_timeout: int = 30  # Increased timeout for heavy computation
+        request_timeout: int = 30,
+        test_script_path: Path = Path("./test.sh")
     ):
         self.host = host
         self.port = port
         self.base_url = f"http://{host}:{port}"
         self.startup_timeout = startup_timeout
         self.request_timeout = request_timeout
+        self.test_script_path = test_script_path
         self.process: Optional[asyncio.subprocess.Process] = None
         self.log_file: Optional[Path] = None
+        self.log_errors: List[str] = []
+
+    def _validate_test_script(self) -> None:
+        """Validate that test script exists and is executable."""
+        if not self.test_script_path.exists():
+            error_msg = f"Test script not found: {self.test_script_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+
+        if os.name != 'nt':  # Unix-like systems
+            if not os.access(self.test_script_path, os.X_OK):
+                error_msg = f"Test script is not executable: {self.test_script_path}"
+                logger.error(error_msg)
+                raise PermissionError(error_msg)
+
+    def _check_log_for_errors(self) -> List[str]:
+        """Check server log file for error patterns."""
+        if not self.log_file or not Path(self.log_file.name).exists():
+            return []
+
+        errors = []
+        try:
+            # Ensure log is flushed
+            if not self.log_file.closed:
+                self.log_file.flush()
+
+            # Read log content
+            log_content = Path(self.log_file.name).read_text()
+
+            # Check each line for error patterns
+            for line in log_content.splitlines():
+                for pattern in self.ERROR_PATTERNS:
+                    if re.search(pattern, line):
+                        errors.append(line.strip())
+                        break  # Skip other patterns for this line
+
+            return errors
+        except Exception as e:
+            logger.error(f"Error checking log file: {e}")
+            return [f"Failed to check log file: {str(e)}"]
 
     async def _run_server(self, project_dir: Path) -> Tuple[asyncio.subprocess.Process, Path]:
         """Start the Rust server process."""
@@ -42,7 +96,7 @@ class ServerTester:
             env = {
                 "RUST_BACKTRACE": "1",
                 "RUST_LOG": "debug",
-                **os.environ  # Include existing environment variables
+                **os.environ
             }
 
             # Start server process
@@ -72,6 +126,15 @@ class ServerTester:
 
         async with aiohttp.ClientSession() as session:
             while (datetime.now() - start_time).total_seconds() < self.startup_timeout:
+                # Check for early errors in logs
+                errors = self._check_log_for_errors()
+                if errors:
+                    logger.error("Found errors in server log during startup:")
+                    for error in errors:
+                        logger.error(f"  {error}")
+                    self.log_errors.extend(errors)
+                    return False
+
                 if self.process and self.process.returncode is not None:
                     if self.log_file and not self.log_file.closed:
                         self.log_file.flush()
@@ -102,6 +165,14 @@ class ServerTester:
 
     def _stop_server(self) -> None:
         """Stop the server and cleanup resources."""
+        # Check for final errors before stopping
+        final_errors = self._check_log_for_errors()
+        if final_errors:
+            logger.error("Found errors in server log during shutdown:")
+            for error in final_errors:
+                logger.error(f"  {error}")
+            self.log_errors.extend(final_errors)
+
         if self.process is None:
             return
 
@@ -161,77 +232,70 @@ class ServerTester:
             self.process = None
             self.log_file = None
 
-    def _validate_html_content(self, content: str, is_post_response: bool = False) -> Tuple[bool, Optional[str]]:
-        """Validate the HTML content matches expected structure."""
+    async def _run_test_script(self, project_dir: Path) -> Tuple[bool, Optional[str], Dict[str, Any]]:
+        """Run the external test script."""
         try:
-            # Check basic HTML structure
-            if not all(tag in content for tag in ['<!DOCTYPE html>', '<html', '<head>', '<body>']):
-                return False, "Missing basic HTML structure"
+            env = {
+                "SERVER_HOST": self.host,
+                "SERVER_PORT": str(self.port),
+                "PROJECT_DIR": str(project_dir),
+                **os.environ
+            }
 
-            # Check for required elements
-            if not all(element in content for element in [
-                '<title>Performance Demo</title>',
-                '<h1>Performance Demonstration</h1>',
-                '<form action="/" method="post">',
-                '<button type="submit">Run Heavy Computation</button>'
-            ]):
-                return False, "Missing required HTML elements"
+            logger.info(
+                f"Running test script: {self.test_script_path} in {project_dir}")
 
-            # Check CSS styles
-            if not all(style in content for style in [
-                'font-family: Arial, sans-serif',
-                'max-width: 800px',
-                'margin: 0 auto',
-                'padding: 20px'
-            ]):
-                return False, "Missing required CSS styles"
+            process = await asyncio.create_subprocess_exec(
+                f"./{self.test_script_path.name}",
+                cwd=self.test_script_path.parent,
+                env=env,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
 
-            # For POST responses, check computation results
-            if is_post_response:
-                if not all(element in content for element in [
-                    '<h2>Results:</h2>',
-                    'Time taken:',
-                    'Number of primes found:',
-                    'Last few primes:',
-                    'Matrix multiplication sum:'
-                ]):
-                    return False, "Missing computation results"
+            stdout, stderr = await process.communicate()
 
-                # Extract and validate computation results
-                try:
-                    # Check prime count (should be > 0)
-                    prime_count_match = re.search(
-                        r'Number of primes found: (\d+)', content)
-                    if not prime_count_match or int(prime_count_match.group(1)) <= 0:
-                        return False, "Invalid prime count"
+            # Check for new server errors
+            current_errors = self._check_log_for_errors()
+            if current_errors:
+                logger.error("Found errors in server log during tests:")
+                for error in current_errors:
+                    logger.error(f"  {error}")
+                self.log_errors.extend(current_errors)
 
-                    # Check last primes format (should be array-like)
-                    last_primes_match = re.search(
-                        r'Last few primes: \[([\d, ]+)\]', content)
-                    if not last_primes_match:
-                        return False, "Invalid last primes format"
+            success = process.returncode == 0 and not current_errors
 
-                    # Check matrix sum (should be a number)
-                    matrix_sum_match = re.search(
-                        r'Matrix multiplication sum: (-?\d+)', content)
-                    if not matrix_sum_match:
-                        return False, "Invalid matrix sum"
+            result = {
+                "stdout": stdout.decode() if stdout else "",
+                "stderr": stderr.decode() if stderr else "",
+                "exit_code": process.returncode,
+                "server_errors": self.log_errors
+            }
 
-                except Exception as e:
-                    return False, f"Failed to validate computation results: {str(e)}"
+            if not success:
+                error_msg = stderr.decode() if stderr else "Test script failed with no error message"
+                if self.log_errors:
+                    error_msg += f"\nServer errors:\n" + \
+                        "\n".join(self.log_errors)
+                logger.error(f"Test script failed: {error_msg}")
+                return False, error_msg, result
 
-            return True, None
+            logger.info("Test script completed successfully")
+            return True, None, result
 
         except Exception as e:
-            return False, f"HTML validation failed: {str(e)}"
+            logger.error(f"Failed to run test script: {e}")
+            return False, str(e), {"error": str(e), "test_error": self.log_errors}
 
     async def test_server(self, project_dir: Path) -> Tuple[bool, Optional[str], Dict[str, Any]]:
-        """Run comprehensive server tests."""
+        """Run server tests using external test script."""
+        self.log_errors = []  # Reset error log for new test run
+
         try:
+            self._validate_test_script()
+
             # Start server
             process, log_file = await self._run_server(project_dir)
-
-            test_results = {}
 
             # Wait for server to be ready
             if not await self._wait_for_server():
@@ -239,64 +303,34 @@ class ServerTester:
                     self.log_file.flush()
                     log_content = Path(self.log_file.name).read_text()
                     return False, f"Server failed to start. Log contents:\n{log_content}", {
-                        "log_file": str(log_file)
+                        "log_file": str(log_file),
+                        "server_errors": self.log_errors
                     }
                 return False, "Server failed to start", {
-                    "log_file": str(log_file)
+                    "log_file": str(log_file),
+                    "server_errors": self.log_errors
                 }
 
-            async with aiohttp.ClientSession() as session:
-                # Test GET request
-                try:
-                    async with session.get(
-                        f"{self.base_url}/",
-                        timeout=self.request_timeout
-                    ) as response:
-                        content = await response.text()
-                        test_results["get"] = {
-                            "status": response.status,
-                            "content": content
-                        }
+            # Run external test script
+            success, error, results = await self._run_test_script(project_dir)
 
-                        if response.status != 200:
-                            return False, "GET request failed", test_results
+            # Ensure server errors are included in results
+            results["server_errors"] = self.log_errors
 
-                        # Validate GET response HTML
-                        valid, error = self._validate_html_content(
-                            content, is_post_response=False)
-                        if not valid:
-                            return False, f"GET response validation failed: {error}", test_results
+            if not success:
+                return False, f"Test script failed: {error}", results
 
-                except Exception as e:
-                    return False, f"GET request failed: {str(e)}", test_results
+            return True, None, results
 
-                # Test POST request
-                try:
-                    async with session.post(
-                        f"{self.base_url}/",
-                        data={},
-                        timeout=self.request_timeout
-                    ) as response:
-                        content = await response.text()
-                        test_results["post"] = {
-                            "status": response.status,
-                            "content": content
-                        }
+        except FileNotFoundError as e:
+            error_msg = str(e)
+            logger.error(error_msg)
+            return False, error_msg, {"error": "test script not found"}
 
-                        if response.status != 200:
-                            return False, "POST request failed", test_results
-
-                        # Validate POST response HTML and computation results
-                        valid, error = self._validate_html_content(
-                            content, is_post_response=True)
-                        if not valid:
-                            return False, f"POST response validation failed: {error}", test_results
-
-                except Exception as e:
-                    return False, f"POST request failed: {str(e)}", test_results
-
-                logger.info("All server tests passed successfully")
-                return True, None, test_results
+        except PermissionError as e:
+            error_msg = str(e)
+            logger.error(error_msg)
+            return False, error_msg, {"error": "test script not executable"}
 
         except Exception as e:
             logger.error(f"Server testing failed: {e}")

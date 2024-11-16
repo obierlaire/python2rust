@@ -1,5 +1,7 @@
 # Default values
-PYTHON_FILE ?= /Users/olivier/greencode/demo/prime/python/main.py
+PYTHON_FILE ?= ./examples/prime/python/main.py
+# PYTHON_FILE ?= ./examples/mandleweb/mandleweb.py
+
 OUTPUT_DIR ?= generated
 CONFIG_DIR = $(HOME)/.config/python2rust
 LOGS_DIR = logs

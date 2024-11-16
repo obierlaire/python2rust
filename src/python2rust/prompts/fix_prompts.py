@@ -1,6 +1,6 @@
 from langchain.prompts import PromptTemplate
 
-SYSTEM_MESSAGE = """You are an expert Rust (2021) developer."""
+SYSTEM_MESSAGE = """You are an software developer expert Rust (2021)"""
 
 FIX_PROMPT = PromptTemplate(
     input_variables=["rust_code", "toml_content", "verification_result", "analysis"],

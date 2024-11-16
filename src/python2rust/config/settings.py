@@ -7,6 +7,7 @@ import json
 from enum import Enum
 from dataclasses import dataclass
 
+
 def get_default_specs_path() -> Path:
     """Get the default specs file path."""
     possible_paths = [
@@ -14,17 +15,19 @@ def get_default_specs_path() -> Path:
         Path.home() / ".config" / "python2rust" / "migration_specs.json",  # User config
         Path(__file__).parent / "default_specs.json"  # Package default
     ]
-    
+
     for path in possible_paths:
         if path.exists():
             return path
-            
+
     # If no file found, use package default
     return Path(__file__).parent / "default_specs.json"
+
 
 def get_config_path() -> Path:
     """Get the path to the config file."""
     return Path(__file__).parent
+
 
 class LLMChoice(str, Enum):
     """Available LLM choices."""
@@ -32,6 +35,7 @@ class LLMChoice(str, Enum):
     CODELLAMA = "codellama"
     STARCODER = "starcoder"
     CODESTRAL = "codestral"
+
 
 class ModelParameters(BaseModel):
     """Additional parameters for specific models."""
@@ -41,8 +45,9 @@ class ModelParameters(BaseModel):
     do_sample: Optional[bool] = None
     num_return_sequences: Optional[int] = None
     pad_token_id: Optional[int] = None
-    return_full_text : Optional[bool] = True
+    return_full_text: Optional[bool] = True
     stop_sequences: Optional[List[str]] = None
+
 
 class LLMConfig(BaseModel):
     """Configuration for a specific LLM."""
@@ -53,12 +58,14 @@ class LLMConfig(BaseModel):
     model_params: Optional[ModelParameters] = None
     fallback_model: Optional[str] = None  # Fallback model if this one fails
 
+
 class MigrationSteps(BaseModel):
     """Configuration for each migration step."""
     analysis: LLMChoice = Field(default=LLMChoice.CLAUDE)
     generation: LLMChoice = Field(default=LLMChoice.CLAUDE)
     verification: LLMChoice = Field(default=LLMChoice.CLAUDE)
     fixes: LLMChoice = Field(default=LLMChoice.CLAUDE)
+
 
 class Settings(BaseSettings):
     """Application settings."""
@@ -67,7 +74,7 @@ class Settings(BaseSettings):
     output_dir: Path = Field(default=Path("generated"))
     debug_dir: Path = Field(default=Path("generated/debug"))
     specs_file: Path = Field(default_factory=get_default_specs_path)
-    
+
     # LLM Configuration
     llm_steps: MigrationSteps = Field(default_factory=MigrationSteps)
     llm_configs: Dict[LLMChoice, LLMConfig] = Field(
@@ -82,15 +89,15 @@ class Settings(BaseSettings):
             ),
             LLMChoice.CODELLAMA: LLMConfig(
                 model="codellama/CodeLlama-34b-Instruct-hf",
-                temperature=0.7,
+                temperature=0.2,
                 max_tokens=4000,
                 fallback_model=LLMChoice.CLAUDE,
                 model_params=ModelParameters(
                     top_k=100,
                     top_p=0.95,
                     repetition_penalty=1.05,
-                    #num_return_sequences=1,
-                    #stop_sequences=["\n```", "```\n"],
+                    # num_return_sequences=1,
+                    # stop_sequences=["\n```", "```\n"],
                     return_full_text=False
                 )
             ),
@@ -104,10 +111,10 @@ class Settings(BaseSettings):
                     top_p=0.95,
                     repetition_penalty=1.3,
                     do_sample=True,
-                    #stop_sequences=["```\n\n"]
+                    # stop_sequences=["```\n\n"]
                 )
             ),
-             LLMChoice.CODESTRAL: LLMConfig(
+            LLMChoice.CODESTRAL: LLMConfig(
                 model="codestral-latest",
                 temperature=0.1,
                 max_tokens=4000,
@@ -115,12 +122,12 @@ class Settings(BaseSettings):
             ),
         }
     )
-    
+
     # Migration Configuration
     max_attempts: int = Field(default=10)
     max_fixes_per_attempt: int = Field(default=10)
     build_timeout: int = Field(default=300)  # seconds
-    
+
     # Model Selection Strategy
     preferred_models: Dict[str, List[LLMChoice]] = Field(
         default_factory=lambda: {
@@ -130,23 +137,24 @@ class Settings(BaseSettings):
             "fixes": [LLMChoice.CODELLAMA, LLMChoice.CLAUDE]
         }
     )
-    
+
     # Verification Configuration
     expected_image_size: Tuple[int, int] = Field(default=(2000, 2000))
-    
+
     # Server Configuration
     server_host: str = Field(default="127.0.0.1")
     server_port: int = Field(default=8080)
     server_timeout: int = Field(default=30)  # seconds
-    
+
     class Config:
         env_file = ".env"
         env_prefix = "PYTHON2RUST_"
 
     def load_specs(self) -> Dict:
-        """Load migration specifications from the appropriate location."""
         try:
-            return json.loads(self.specs_file.read_text())
+            # Convert Field value to Path
+            specs_file_path = Path(self.specs_file)
+            return json.loads(specs_file_path.read_text(encoding="utf-8"))
         except Exception as e:
             print(f"Warning: Could not load specs from {self.specs_file}: {e}")
             print("Using default specifications")
@@ -154,8 +162,10 @@ class Settings(BaseSettings):
             return json.loads(default_specs_path.read_text())
 
     def get_model_chain(self, task: str) -> List[LLMChoice]:
-        """Get the chain of models to try for a specific task."""
-        return self.preferred_models.get(task, [LLMChoice.CLAUDE])
+        # Convert Field value to dict
+        preferred_models = dict(self.preferred_models)
+        return preferred_models.get(task, [LLMChoice.CLAUDE])
+
 
 # Create global settings instance
 settings = Settings()
